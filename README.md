@@ -18,3 +18,6 @@ While using my Telegram bot to send me notifications from Radarr I decided to ma
 - telegram_bot_token
 - manager_id (Telegram Manager ID)
 - Manager Username + GF Username
+
+![Screenshot1](screenshots/1.jpg)
+![Screenshot2](screenshots/2.jpg)
