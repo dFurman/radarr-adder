@@ -8,9 +8,9 @@ from imdb import IMDb
 
 
 raddarApiKey = ''
-telegram_bot_token = ':'
+telegram_bot_token = ''
 raddar = Radarr(raddarApiKey)
-manager_id =   # Telegram manager id (int)
+manager_id =   # Telegram manager id
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -23,7 +23,7 @@ def start(update, context):
     if user.username == "":  # Manager Username
         update.message.reply_text(f'Welcome My King, what movie would you like to search ?')
         return MovieName
-    elif user.username == "":  # GF Username
+    elif user.username == "":  # Manager's GF Username
         update.message.reply_text(f'Welcome My Queen, what movie would you like to search ?')
         return MovieName
     else:  # Unauthorized Access will be blocked
@@ -51,10 +51,15 @@ def show_more_info(update, movie):  # Show more info about a movie
     ]
     reply_markup = InlineKeyboardMarkup(button_list)
 
-    _imdb = imdb.get_movie(movie['imdbId'].lstrip("tt")) if 'imdbId' in movie else None
-    photo_url = movie['images'][0]['url'] if movie['images'][0]['url'] != "http://image.tmdb.org/t/p/original" else open("poster-dark.png", "rb")
-    bot.send_photo(chat_id=update.callback_query.message.chat_id, photo=photo_url, reply_markup=reply_markup,
-                   caption=f"""Title: {movie['title']} ({movie['year']}).
+    try:
+        _imdb = imdb.get_movie(movie['imdbId'].lstrip("tt")) if 'imdbId' in movie else None
+    except:
+        _imdb = None
+    # photo_url = movie['images'][0]['url'] if movie['images'][0]['url'] != "http://image.tmdb.org/t/p/original" else open("poster-dark.png", "rb")
+    bot.edit_message_caption(message_id=update.callback_query.message.message_id,
+                             chat_id=update.callback_query.message.chat_id,
+                             reply_markup=reply_markup,
+                             caption=f"""Title: {movie['title']} ({movie['year']}).
 Overview: {movie['overview']}
 
 Trailer: {'https://www.youtube.com/watch?v=' + movie['youTubeTrailerId'] if 'youTubeTrailerId' in movie else 'NULL'}
@@ -79,6 +84,22 @@ def send_movie_to_manager(movie, user):
                    reply_markup=reply_markup)
 
     return
+
+def add_movie_to_radarr(movie, update):
+    chat_id = update.callback_query.message.chat_id
+    response = raddar.add_movie(movie['tmdbId'])
+    if response == 'OK':
+        added_text = f"Excellent Choice! Adding {movie['title']} to your collection."
+    elif response == 'EXISTS':
+        added_text = f"Just so you know, the movie {movie['title']} is already exists in your collection :)"
+    elif response == 'UNKNOWN':
+        added_text = f"I'm sorry to tell you that something went wrong while trying to add the movie and I don't know what :\\"
+
+    bot.edit_message_caption(message_id=update.callback_query.message.message_id,
+                             chat_id=chat_id,
+                             caption=f"""{update.callback_query.message.caption}
+
+{added_text}""")
 
 def movie_name(update, context):
     bot.send_chat_action(chat_id=update.message.chat_id, action=telegram.ChatAction.TYPING)
@@ -124,13 +145,15 @@ def callback_query_handler(update, context):
     movie = raddar.get_movie(tmdbId)
     if action == 'ADD':
         if user.id != manager_id:
-            bot.send_message(chat_id=update.callback_query.message.chat_id,
-                             text=f"Great, I'll let the King know you want to add this movie :)")
+            bot.edit_message_caption(message_id=update.callback_query.message.message_id,
+							chat_id=update.callback_query.message.chat_id,
+                            text=f"""{update.callback_query.message.caption}
+
+Great, I'll let the King know you want to add this movie :)""")
+
             send_movie_to_manager(movie, user)
         else:
-            bot.send_message(chat_id=update.callback_query.message.chat_id,
-                             text=f"Excellent Choice! Adding {movie['title']} to your collection.")
-            raddar.add_movie(tmdbId)
+            add_movie_to_radarr(movie, update)
 
     elif action == 'MORE':
         logger.info(f"The User {user.first_name} requested to see more details about the movie {movie['title']}")
@@ -138,11 +161,10 @@ def callback_query_handler(update, context):
 
     elif action == 'ACCEPT':
         user_to_notify = split[2]
-        bot.send_message(chat_id=update.callback_query.message.chat_id,
-                         text=f"Excellent Choice! Adding {movie['title']} to your collection.")
         bot.send_message(chat_id=user_to_notify,
                          text=f"Congratulations! The King has approved your request for the movie: {movie['title']}")
-        raddar.add_movie(tmdbId)
+        add_movie_to_radarr(movie, update)
+
 
     elif action == 'SHOWALL':
         max_movies = int(split[2])

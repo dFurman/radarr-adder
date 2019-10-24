@@ -30,4 +30,9 @@ class Radarr:
         movie_info['addOptions'] = {"searchForMovie": True}
 
         r = requests.post(f"http://localhost:7878/api/movie?apikey={self.apiKey}", json.dumps(movie_info))
-        return
+        if r.status_code in [200, 201, 202]:
+            return "OK"
+        elif r.status_code == 400:
+            return "EXISTS"
+        else:
+            return "UNKNOWN"
