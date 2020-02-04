@@ -1,4 +1,5 @@
 # Radarr Telegram Search and Add
+[![Build Status](https://travis-ci.com/dFurman/radarr-adder.svg?branch=master)](https://travis-ci.com/dFurman/radarr-adder)
 
 While using my Telegram bot to send me notifications from Radarr I decided to make it also search and add movies to my collection in Radarr.
 #### Features:
