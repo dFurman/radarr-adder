@@ -1,13 +1,14 @@
 import requests
 import json
-import os 
+import os
+
 
 class Sonarr:
     def __init__(self, apiKey):
         self.apiKey = apiKey
         self.sonarrIP = os.environ.get('SONARR_IP', 'localhost')
 
-    def get_all_series(self,series_name):
+    def get_all_series(self, series_name):
         series_name = series_name.replace(" ", "+")
         r = requests.get(f"http://{self.sonarrIP}:8989/api/series/lookup?term={series_name}&apikey={self.apiKey}")
         return r.json()
