@@ -1,13 +1,14 @@
 import requests
 import json
-import os 
+import os
+
 
 class Radarr:
     def __init__(self, apiKey):
         self.apiKey = apiKey
         self.radarrIP = os.environ.get('RADARR_IP', 'localhost')
 
-    def get_movies(self,movie_name):
+    def get_movies(self, movie_name):
         movie_name = movie_name.replace(" ", "+")
         r = requests.get(f"http://{self.radarrIP}:7878/api/movie/lookup?term={movie_name}&apikey={self.apiKey}")
         return r.json()

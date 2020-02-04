@@ -130,7 +130,7 @@ def show_more_movie_info(update, movie):  # Show more info about a movie
 
     try:
         _imdb = imdb.get_movie(movie['imdbId'].lstrip("tt")) if 'imdbId' in movie else None
-    except:
+    except Exception:
         _imdb = None
     # photo_url = movie['images'][0]['url'] if movie['images'][0]['url'] != "http://image.tmdb.org/t/p/original" else open("poster-dark.png", "rb")
     bot.edit_message_caption(message_id=update.callback_query.message.message_id,
@@ -153,7 +153,7 @@ def show_more_series_info(update, series):  # Show more info about a movie
 
     try:
         _imdb = imdb.get_movie(series['imdbId'].lstrip("tt")) if 'imdbId' in series else None
-    except:
+    except Exception:
         _imdb = None
     # photo_url = movie['images'][0]['url'] if movie['images'][0]['url'] != "http://image.tmdb.org/t/p/original" else open("poster-dark.png", "rb")
     bot.edit_message_caption(message_id=update.callback_query.message.message_id,
@@ -176,8 +176,7 @@ def send_movie_to_manager(movie, user):
          InlineKeyboardButton("More Info...", callback_data=f"MORE_{movie['tmdbId']}")]
     ]
     reply_markup = InlineKeyboardMarkup(button_list)
-    photo_url = movie['images'][0]['url'] if movie['images'][0][
-                                                 'url'] != "http://image.tmdb.org/t/p/original" else open(
+    photo_url = movie['images'][0]['url'] if movie['images'][0]['url'] != "http://image.tmdb.org/t/p/original" else open(
         "poster-dark.png", "rb")
     bot.send_photo(chat_id=manager_id, photo=photo_url,
                    caption=f"""Sorry to bother you but {user.first_name} wants to add this movie to your collection:
@@ -242,7 +241,7 @@ def add_series_to_sonarr(series, update):
     seasons_to_add = check_if_season_exists(series['tvdbId'])
     if not seasons_to_add:
         seasons_to_add = []
-        for i in range(series['seasonCount']+1):
+        for i in range(series['seasonCount'] + 1):
             seasons_to_add.append({"seasonNumber": i, "monitored": False})
     seasons_to_add_global[series['tvdbId']] = seasons_to_add
     button_list = update_series_button_list(series['tvdbId'])
@@ -272,7 +271,7 @@ def select_source_query_handler(update, context):
     elif cqd == "TV_SERIES":
         return Series
     else:
-        return cancel(update,context)
+        return cancel(update, context)
 
 
 def series_callback_query_handler(update, context):
@@ -282,7 +281,7 @@ def series_callback_query_handler(update, context):
     message = update.callback_query.message
     split = cqd.split("_")
     action = split[0]
-    tvdbId = data = int(split[1])
+    tvdbId = int(split[1])
     if not action == 'CANCEL':
         series = sonarr.get_series(tvdbId)[0]
     if action == 'ADD':
@@ -308,7 +307,6 @@ def series_callback_query_handler(update, context):
         seasons_to_add_global[tvdbId][int(season_number)]['monitored'] = False
         new_button_list = update_series_button_list(tvdbId)
         edit_series_message_with_new_button_list(message, new_button_list, tvdbId)
-
 
     elif action == 'ADDSERIES':
         response = sonarr.add_series(tvdbId, seasons_to_add_global[tvdbId])
@@ -340,7 +338,7 @@ def movies_callback_query_handler(update, context):
     user = update.callback_query.from_user
     split = cqd.split("_")
     action = split[0]
-    tmdbId = data = split[1]
+    tmdbId = split[1]
     movie = raddar.get_movie(tmdbId)
     if action == 'ADD':
         if user.id != manager_id:
@@ -362,7 +360,7 @@ def movies_callback_query_handler(update, context):
 
     elif action == 'SHOWALL':
         max_movies = int(split[2])
-        movies = raddar.get_movies(data)
+        movies = raddar.get_movies(tmdbId)
         movies.sort(key=lambda x: x['year'], reverse=True)
         list_movies(update.callback_query.message.chat_id, movies[max_movies:])
 
@@ -384,12 +382,9 @@ def main():
 
         states={
             Movies: [MessageHandler(Filters.text, search_movies),
-                     CallbackQueryHandler(movies_callback_query_handler),
-                     # CommandHandler('start', start)
-                     ],
+                     CallbackQueryHandler(movies_callback_query_handler)],
             Series: [MessageHandler(Filters.text, search_series),
-                     CallbackQueryHandler(series_callback_query_handler),
-            ]
+                     CallbackQueryHandler(series_callback_query_handler)]
         },
         fallbacks=[CommandHandler('cancel', cancel)]
     )
