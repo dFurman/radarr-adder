@@ -6,7 +6,7 @@ from telegram.ext import (Updater, CommandHandler, MessageHandler, Filters,
                           ConversationHandler, CallbackQueryHandler)
 import logging
 from imdb import IMDb
-import os 
+import os
 
 if os.path.isfile('.env'):
     from dotenv import load_dotenv
@@ -26,6 +26,7 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 logger = logging.getLogger(__name__)
 
 Movies, Series = range(2)
+
 
 def start(update, context):
     button_list = [
@@ -69,6 +70,7 @@ def search_movies(update, context):
                          text=f"Show All Movies ?", reply_markup=reply_markup)
     return Movies
 
+
 def search_series(update, context):
     bot.send_chat_action(chat_id=update.message.chat_id, action=telegram.ChatAction.TYPING)
     user = update.message.from_user
@@ -91,6 +93,7 @@ def search_series(update, context):
                          text=f"Show All TV Shows ?", reply_markup=reply_markup)
     return Series
 
+
 def list_movies(chat_id, movies):  # Show the list of movies with Add and More Info buttons
     for movie in movies:
         bot.send_chat_action(chat_id=chat_id, action=telegram.ChatAction.TYPING)
@@ -102,6 +105,7 @@ def list_movies(chat_id, movies):  # Show the list of movies with Add and More I
         photo_url = movie['images'][0]['url'] if movie['images'][0]['url'] != "http://image.tmdb.org/t/p/original" else open("poster-dark.png", "rb")
         bot.send_photo(chat_id=chat_id, photo=photo_url,
                        caption=f"{movie['title']} ({movie['year']})", reply_markup=reply_markup)
+
 
 def list_series(chat_id, series_list):
     for series in series_list:
@@ -137,8 +141,8 @@ Overview: {movie['overview']}
 
 Trailer: {'https://www.youtube.com/watch?v=' + movie['youTubeTrailerId'] if 'youTubeTrailerId' in movie else 'NULL'}
 
-IMDb: {str(_imdb.data['rating']) + '/10' if _imdb and 'rating' in _imdb.data else 'NULL'}
-                                   """)
+IMDb: {str(_imdb.data['rating']) + '/10' if _imdb and 'rating' in _imdb.data else 'NULL'} """)
+
 
 def show_more_series_info(update, series):  # Show more info about a movie
     bot.send_chat_action(chat_id=update.callback_query.message.chat_id, action=telegram.ChatAction.TYPING)
@@ -163,9 +167,10 @@ IMDb: {str(_imdb.data['rating']) + '/10' if _imdb and 'rating' in _imdb.data els
 Overview: {series['overview']}
 """)
 
-# if other user than manager tries to add a movie, send the request to the manager to
-# approve and notify the user upon approval
+
 def send_movie_to_manager(movie, user):
+    # if other user than manager tries to add a movie, send the request to the manager to
+    # approve and notify the user upon approval
     button_list = [
         [InlineKeyboardButton("Add to Radarr", callback_data=f"ACCEPT_{movie['tmdbId']}_{user.id}"),
          InlineKeyboardButton("More Info...", callback_data=f"MORE_{movie['tmdbId']}")]
@@ -180,6 +185,7 @@ def send_movie_to_manager(movie, user):
                    reply_markup=reply_markup)
 
     return
+
 
 def add_movie_to_radarr(movie, update):
     chat_id = update.callback_query.message.chat_id
@@ -197,6 +203,7 @@ def add_movie_to_radarr(movie, update):
 
 {added_text}""")
 
+
 def check_if_season_exists(tvdbId):
     my_collection = sonarr.get_collection()
     for series in my_collection:
@@ -206,6 +213,7 @@ def check_if_season_exists(tvdbId):
                 seasons.append({'seasonNumber': season['seasonNumber'], 'monitored': season['monitored']})
             return seasons
     return False
+
 
 def update_series_button_list(tvdbId):
     button_list = []
@@ -218,6 +226,7 @@ def update_series_button_list(tvdbId):
                                                      callback_data=f"ADDSEASON_{tvdbId}_{season['seasonNumber']}")])
     return button_list
 
+
 def edit_series_message_with_new_button_list(message, new_button_list, tvdbId):
     new_button_list.append([InlineKeyboardButton(f"Done !", callback_data=f"ADDSERIES_{tvdbId}")])
     new_button_list.append([InlineKeyboardButton(f"Cancel", callback_data=f"CANCEL_123")])
@@ -227,6 +236,7 @@ def edit_series_message_with_new_button_list(message, new_button_list, tvdbId):
                              chat_id=message.chat_id,
                              reply_markup=reply_markup,
                              caption=message.caption)
+
 
 def add_series_to_sonarr(series, update):
     seasons_to_add = check_if_season_exists(series['tvdbId'])
@@ -238,10 +248,12 @@ def add_series_to_sonarr(series, update):
     button_list = update_series_button_list(series['tvdbId'])
     edit_series_message_with_new_button_list(update.callback_query.message, button_list, series['tvdbId'])
 
+
 def error(update, context):
     logger.warning('Update "%s" caused error "%s"', update, context.error)
     bot.send_message(chat_id=manager_id,
                      text=f'Update ${update} caused error "${context.error}"')
+
 
 def cancel(update, context):
     user = update.message.from_user
@@ -249,6 +261,7 @@ def cancel(update, context):
     update.message.reply_text('Bye! I hope I helped you today :)',
                               reply_markup=ReplyKeyboardRemove())
     return ConversationHandler.END
+
 
 def select_source_query_handler(update, context):
     bot.send_message(chat_id=update.callback_query.message.chat_id,
@@ -260,6 +273,7 @@ def select_source_query_handler(update, context):
         return Series
     else:
         return cancel(update,context)
+
 
 def series_callback_query_handler(update, context):
     bot.send_chat_action(chat_id=update.callback_query.message.chat_id, action=telegram.ChatAction.TYPING)
@@ -284,13 +298,13 @@ def series_callback_query_handler(update, context):
         show_more_series_info(update, series)
 
     elif action == 'ADDSEASON':
-        season_number=split[2]
+        season_number = split[2]
         seasons_to_add_global[tvdbId][int(season_number)]['monitored'] = True
         new_button_list = update_series_button_list(tvdbId)
         edit_series_message_with_new_button_list(message, new_button_list, tvdbId)
 
     elif action == 'REMOVESEASON':
-        season_number=split[2]
+        season_number = split[2]
         seasons_to_add_global[tvdbId][int(season_number)]['monitored'] = False
         new_button_list = update_series_button_list(tvdbId)
         edit_series_message_with_new_button_list(message, new_button_list, tvdbId)
@@ -319,6 +333,7 @@ def series_callback_query_handler(update, context):
         bot.edit_message_caption(message_id=message.message_id, chat_id=message.chat_id,
                                  caption="Canceled")
 
+
 def movies_callback_query_handler(update, context):
     bot.send_chat_action(chat_id=update.callback_query.message.chat_id, action=telegram.ChatAction.TYPING)
     cqd = update.callback_query.data
@@ -345,7 +360,6 @@ def movies_callback_query_handler(update, context):
                          text=f"Congratulations! The King has approved your request for the movie: {movie['title']}")
         add_movie_to_radarr(movie, update)
 
-
     elif action == 'SHOWALL':
         max_movies = int(split[2])
         movies = raddar.get_movies(data)
@@ -353,6 +367,7 @@ def movies_callback_query_handler(update, context):
         list_movies(update.callback_query.message.chat_id, movies[max_movies:])
 
     return Movies
+
 
 def main():
     # Create the Updater and pass it your bot's token.
