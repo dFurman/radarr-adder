@@ -102,7 +102,7 @@ def list_movies(chat_id, movies):  # Show the list of movies with Add and More I
              InlineKeyboardButton("More Info...", callback_data=f"MORE_{movie['tmdbId']}")]
         ]
         reply_markup = InlineKeyboardMarkup(button_list)
-        photo_url = movie['images'][0]['url'] if movie['images'][0]['url'] != "http://image.tmdb.org/t/p/original" else open("poster-dark.png", "rb")
+        photo_url = movie['images'][0]['url'] if movie['images'] and movie['images'][0]['url'] != "http://image.tmdb.org/t/p/original" else open("poster-dark.png", "rb")
         bot.send_photo(chat_id=chat_id, photo=photo_url,
                        caption=f"{movie['title']} ({movie['year']})", reply_markup=reply_markup)
 
@@ -366,6 +366,12 @@ def movies_callback_query_handler(update, context):
 
     return Movies
 
+def change_to_movies(update, context):
+    update.message.reply_text('Changing to Movies...')
+    return Movies
+def change_to_series(update, context):
+    update.message.reply_text('Changing to TV Shows...')
+    return Series
 
 def main():
     # Create the Updater and pass it your bot's token.
@@ -381,10 +387,18 @@ def main():
                       CallbackQueryHandler(select_source_query_handler)],
 
         states={
-            Movies: [MessageHandler(Filters.text, search_movies),
-                     CallbackQueryHandler(movies_callback_query_handler)],
-            Series: [MessageHandler(Filters.text, search_series),
-                     CallbackQueryHandler(series_callback_query_handler)]
+            Movies: [
+                CommandHandler('cancel', cancel),
+                CommandHandler('tv', change_to_series),
+                MessageHandler(Filters.text, search_movies),
+                CallbackQueryHandler(movies_callback_query_handler)
+            ],
+            Series: [
+                CommandHandler('cancel', cancel),
+                CommandHandler('movies', change_to_movies),
+                MessageHandler(Filters.text, search_series),
+                CallbackQueryHandler(series_callback_query_handler)
+            ]
         },
         fallbacks=[CommandHandler('cancel', cancel)]
     )
@@ -395,6 +409,7 @@ def main():
     dp.add_error_handler(error)
 
     # Start the Bot
+    bot.send_message(chat_id=manager_id, text="Im Up !!")
     updater.start_polling()
 
     # Run the bot until you press Ctrl-C or the process receives SIGINT,
