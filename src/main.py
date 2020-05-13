@@ -41,8 +41,8 @@ Movies, Series = range(2)
 
 def start(update, context):
     button_list = [
-        [InlineKeyboardButton("Movies", callback_data=f"MOVIES"),
-         InlineKeyboardButton("TV Series", callback_data=f"TV_SERIES")]
+        [InlineKeyboardButton("Movies", callback_data="MOVIES"),
+         InlineKeyboardButton("TV Series", callback_data="TV_SERIES")]
     ]
     reply_markup = InlineKeyboardMarkup(button_list)
     user = update.message.from_user
@@ -58,19 +58,19 @@ def start(update, context):
 
     elif userId in guests_list:
         description = random.choice(['Bitch', 'Pal', 'Buddy', 'Bro', 'Hoe', 'Looser'])
-    
+
     else:  # Unauthorized Access will be blocked
         logger.info(f"{user.first_name}(Username: {user.username}, ID: {userId}) just tried to start a conversation but failed")
-        update.message.reply_text(f"Who are you ? I don't know you!")
-        bot.send_message(chat_id=manager_id, 
-                            text=f'{user.first_name}(Username: {user.username}, ID: {userId}) just tried to start a conversation but failed')
+        update.message.reply_text("Who are you ? I don't know you!")
+        bot.send_message(chat_id=manager_id,
+                        text=f'{user.first_name}(Username: {user.username}, ID: {userId}) just tried to start a conversation but failed')
 
     if description:
         update.message.reply_text(f'Welcome {description}, what would you like to search ?', reply_markup=reply_markup)
         if userId != manager_id:
             bot.send_message(chat_id=manager_id,
-            text=f"{user.first_name}(Username: @{user.username}, ID:{userId}) Started a conversation.")
-            
+                            text=f"{user.first_name}(Username: @{user.username}, ID:{userId}) Started a conversation.")
+
 
 def search_movies(update, context):
     bot.send_chat_action(chat_id=update.message.chat_id, action=telegram.ChatAction.TYPING)
@@ -92,7 +92,7 @@ def search_movies(update, context):
         ]
         reply_markup = InlineKeyboardMarkup(button_list)
         bot.send_message(chat_id=update.message.chat_id,
-                         text=f"Show All Movies ?", reply_markup=reply_markup)
+                         text="Show All Movies ?", reply_markup=reply_markup)
     return Movies
 
 
@@ -115,7 +115,7 @@ def search_series(update, context):
         ]
         reply_markup = InlineKeyboardMarkup(button_list)
         bot.send_message(chat_id=update.message.chat_id,
-                         text=f"Show All TV Shows ?", reply_markup=reply_markup)
+                         text="Show All TV Shows ?", reply_markup=reply_markup)
     return Series
 
 
@@ -219,7 +219,7 @@ def add_movie_to_radarr(movie, update):
     elif response == 'EXISTS':
         added_text = f"Just so you know, the movie {movie['title']} is already exists in your collection :)"
     elif response == 'UNKNOWN':
-        added_text = f"I'm sorry to tell you that something went wrong while trying to add the movie and I don't know what :\\"
+        added_text = "I'm sorry to tell you that something went wrong while trying to add the movie and I don't know what :\\"
 
     bot.edit_message_caption(message_id=update.callback_query.message.message_id,
                              chat_id=chat_id,
@@ -252,8 +252,8 @@ def update_series_button_list(tvdbId):
 
 
 def edit_series_message_with_new_button_list(message, new_button_list, tvdbId):
-    new_button_list.append([InlineKeyboardButton(f"Done !", callback_data=f"ADDSERIES_{tvdbId}")])
-    new_button_list.append([InlineKeyboardButton(f"Cancel", callback_data=f"CANCEL_123")])
+    new_button_list.append([InlineKeyboardButton("Done !", callback_data=f"ADDSERIES_{tvdbId}")])
+    new_button_list.append([InlineKeyboardButton("Cancel", callback_data="CANCEL_123")])
     reply_markup = InlineKeyboardMarkup(new_button_list)
 
     bot.edit_message_caption(message_id=message.message_id,
@@ -289,7 +289,7 @@ def cancel(update, context):
 
 def select_source_query_handler(update, context):
     bot.send_message(chat_id=update.callback_query.message.chat_id,
-                     text=f"Awesome, now enter what do you want to search:")
+                     text="Awesome, now enter what do you want to search:")
     cqd = update.callback_query.data
     if cqd == "MOVIES":
         return Movies
@@ -312,7 +312,7 @@ def series_callback_query_handler(update, context):
     if action == 'ADD':
         if user.id != manager_id:
             bot.send_message(chat_id=message.chat_id,
-                             text=f"Sorry, function is not implemented yet :(")
+                             text="Sorry, function is not implemented yet :(")
             # bot.send_message(chat_id=message.chat_id,
             #                  text=f"Great, I'll let the King know you want to add this series :)")
             # send_series_to_manager(series, user)
@@ -340,9 +340,9 @@ def series_callback_query_handler(update, context):
         if response == 'OK':
             added_text = f"Excellent Choice! Adding {series['title']} to your collection."
         elif response == 'EXISTS':
-            added_text = f"Cool, I updated your collection :)"
+            added_text = "Cool, I updated your collection :)"
         elif response == 'UNKNOWN':
-            added_text = f"I'm sorry to tell you that something went wrong while trying to add the Series and I don't know what :\\"
+            added_text = "I'm sorry to tell you that something went wrong while trying to add the Series and I don't know what :\\"
 
         bot.edit_message_caption(message_id=message.message_id, chat_id=message.chat_id,
                                  caption=added_text)
@@ -370,7 +370,7 @@ def movies_callback_query_handler(update, context):
     if action == 'ADD':
         if user.id != manager_id:
             bot.send_message(chat_id=update.callback_query.message.chat_id,
-                             text=f"Great, I'll let the King know you want to add this movie :)")
+                             text="Great, I'll let the King know you want to add this movie :)")
             send_movie_to_manager(movie, user)
         else:
             add_movie_to_radarr(movie, update)
@@ -393,12 +393,16 @@ def movies_callback_query_handler(update, context):
 
     return Movies
 
+
 def change_to_movies(update, context):
     update.message.reply_text('Changing to Movies...')
     return Movies
+
+    
 def change_to_series(update, context):
     update.message.reply_text('Changing to TV Shows...')
     return Series
+
 
 def main():
     # Create the Updater and pass it your bot's token.
