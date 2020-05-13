@@ -7,6 +7,7 @@ from telegram.ext import (Updater, CommandHandler, MessageHandler, Filters,
 import logging
 from imdb import IMDb
 import os
+import random
 
 if os.path.isfile('.env'):
     from dotenv import load_dotenv
@@ -18,12 +19,22 @@ telegram_bot_token = os.environ.get('TELEGRAM_BOT_TOKEN')
 raddar = Radarr(radarrApiKey)
 sonarr = Sonarr(sonarrApiKey)
 seasons_to_add_global = {}
-manager_id = int(os.environ.get('MANAGER_ID'))  # Telegram manager id
-manager_username = os.environ.get('MANAGER_USERNAME')
-gf_username = os.environ.get('GF_USERNAME')
+manager_id = os.environ.get('MANAGER_ID', '')  # Telegram manager id
+gf_id = os.environ.get('GF_ID', '')
+guests_id = os.environ.get('GUESTS_ID', '')
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+if manager_id != '':
+    managers = list(map(int, manager_id.split(',')))
+    manager_id = managers[0]
+
+if gf_id != '':
+    gf_list = list(map(int, gf_id.split(',')))
+
+if guests_id != '':
+    guests_list = list(map(int, guests_id.split(',')))
 
 Movies, Series = range(2)
 
@@ -35,17 +46,31 @@ def start(update, context):
     ]
     reply_markup = InlineKeyboardMarkup(button_list)
     user = update.message.from_user
-    logger.info(f"{user.first_name} Started a conversation.")
-    if user.username == manager_username:
-        update.message.reply_text(f'Welcome My King, what would you like to search ?', reply_markup=reply_markup)
-        # return Movies
-    elif user.username == gf_username:
-        update.message.reply_text(f'Welcome My Queen, what would you like to search ?', reply_markup=reply_markup)
-        # return Movies
-    else:  # Unauthorized Access will be blocked
-        logger.info(f"User {user.username} just tried to start a conversation but failed")
-        update.message.reply_text(f"Who are you ? I don't know you!")
+    userId = update.message.chat_id
+    description = None
+    logger.info(f"{user.first_name}(Username: {user.username}, ID: {userId}) Started a conversation.")
 
+    if userId in managers:
+        description = random.choice(['My King', 'Boss'])
+
+    elif userId in gf_list:
+        description = random.choice(['My Queen', 'Bitch'])
+
+    elif userId in guests_list:
+        description = random.choice(['Bitch', 'Pal', 'Buddy', 'Bro', 'Hoe', 'Looser'])
+    
+    else:  # Unauthorized Access will be blocked
+        logger.info(f"{user.first_name}(Username: {user.username}, ID: {userId}) just tried to start a conversation but failed")
+        update.message.reply_text(f"Who are you ? I don't know you!")
+        bot.send_message(chat_id=manager_id, 
+                            text=f'{user.first_name}(Username: {user.username}, ID: {userId}) just tried to start a conversation but failed')
+
+    if description:
+        update.message.reply_text(f'Welcome {description}, what would you like to search ?', reply_markup=reply_markup)
+        if userId != manager_id:
+            bot.send_message(chat_id=manager_id,
+            text=f"{user.first_name}(Username: @{user.username}, ID:{userId}) Started a conversation.")
+            
 
 def search_movies(update, context):
     bot.send_chat_action(chat_id=update.message.chat_id, action=telegram.ChatAction.TYPING)
@@ -287,7 +312,9 @@ def series_callback_query_handler(update, context):
     if action == 'ADD':
         if user.id != manager_id:
             bot.send_message(chat_id=message.chat_id,
-                             text=f"Great, I'll let the King know you want to add this series :)")
+                             text=f"Sorry, function is not implemented yet :(")
+            # bot.send_message(chat_id=message.chat_id,
+            #                  text=f"Great, I'll let the King know you want to add this series :)")
             # send_series_to_manager(series, user)
         else:
             add_series_to_sonarr(series, update)
