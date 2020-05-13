@@ -63,13 +63,13 @@ def start(update, context):
         logger.info(f"{user.first_name}(Username: {user.username}, ID: {userId}) just tried to start a conversation but failed")
         update.message.reply_text("Who are you ? I don't know you!")
         bot.send_message(chat_id=manager_id,
-                        text=f'{user.first_name}(Username: {user.username}, ID: {userId}) just tried to start a conversation but failed')
+                         text=f'{user.first_name}(Username: {user.username}, ID: {userId}) just tried to start a conversation but failed')
 
     if description:
         update.message.reply_text(f'Welcome {description}, what would you like to search ?', reply_markup=reply_markup)
         if userId != manager_id:
             bot.send_message(chat_id=manager_id,
-                            text=f"{user.first_name}(Username: @{user.username}, ID:{userId}) Started a conversation.")
+                             text=f"{user.first_name}(Username: @{user.username}, ID:{userId}) Started a conversation.")
 
 
 def search_movies(update, context):
@@ -398,7 +398,7 @@ def change_to_movies(update, context):
     update.message.reply_text('Changing to Movies...')
     return Movies
 
-    
+
 def change_to_series(update, context):
     update.message.reply_text('Changing to TV Shows...')
     return Series
